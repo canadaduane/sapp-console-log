@@ -1,16 +1,73 @@
 #[cfg(test)] #[macro_use] extern crate log;
 use log::{Log, Level, Record, Metadata, SetLoggerError};
 
-extern crate miniquad;
+#[cfg(target_arch = "wasm32")]
+extern crate sapp_wasm as sapp;
+
+#[cfg(not(target_arch = "wasm32"))]
+pub mod console {
+    pub fn debug(_msg: &str) {
+        panic!("console::debug only implemented for wasm32 target");
+    }
+    
+    pub fn log(_msg: &str) {
+        panic!("console::log only implemented for wasm32 target");
+    }
+
+    pub fn info(_msg: &str) {
+        panic!("console::info only implemented for wasm32 target");
+    }
+
+    pub fn warn(_msg: &str) {
+        panic!("console::warn only implemented for wasm32 target");
+    }
+    
+    pub fn error(_msg: &str) {
+        panic!("console::error only implemented for wasm32 target");
+    }
+}
+
+#[cfg(target_arch = "wasm32")]
+pub mod console {
+    pub fn debug(msg: &str) {
+        use std::ffi::CString;
+        let string = CString::new(msg).unwrap();
+        unsafe { sapp::console_debug(string.as_ptr()); }
+    }
+    
+    pub fn log(msg: &str) {
+        use std::ffi::CString;
+        let string = CString::new(msg).unwrap();
+        unsafe { sapp::console_log(string.as_ptr()); }
+    }
+
+    pub fn info(msg: &str) {
+        use std::ffi::CString;
+        let string = CString::new(msg).unwrap();
+        unsafe { sapp::console_info(string.as_ptr()); }
+    }
+
+    pub fn warn(msg: &str) {
+        use std::ffi::CString;
+        let string = CString::new(msg).unwrap();
+        unsafe { sapp::console_warn(string.as_ptr()); }
+    }
+    
+    pub fn error(msg: &str) {
+        use std::ffi::CString;
+        let string = CString::new(msg).unwrap();
+        unsafe { sapp::console_error(string.as_ptr()); }
+    }
+}
 
 fn log_record(record: &Record) {
     // pick the console.log() variant for the appropriate logging level
     let console_send = match record.level() {
-        Level::Error => miniquad::console::error,
-        Level::Warn => miniquad::console::warn,
-        Level::Info => miniquad::console::info,
-        Level::Debug => miniquad::console::log,
-        Level::Trace => miniquad::console::debug,
+        Level::Error => console::error,
+        Level::Warn => console::warn,
+        Level::Info => console::info,
+        Level::Debug => console::log,
+        Level::Trace => console::debug,
     };
 
     console_send(&format!("{}", record.args()));
